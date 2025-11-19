@@ -1,0 +1,206 @@
+---
+title: "DaSEH qualitative"
+date: "2025-10-01"
+output:
+  html_document:
+    css: daseh.css
+    toc: true
+  pdf_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+#Load Libraries
+
+```{r libraries}
+library(tidyverse)
+library(readxl)
+library(wordcloud)
+library(ggplot2)
+library(textdata)  
+library(knitr)     
+library(patchwork)
+```
+
+#Renaming and Combining
+
+```{r cleanup}
+feedback <- read_excel("~/Desktop/Qualitative Research.xlsx", sheet = "Qualitative") %>%
+  rename(
+    `Online Course` = `Please provide any feedback that you think could help us improve the DaSEH Online Course. (POST COURSE)`,
+    `Code-a-thon Modality` = `Please provide any suggestions regarding the Code-a-thon modality. This could be logistics, timing, projects, topics covered, standups, code review, lightning talks, etc. (POST CODE-A-THON)`,
+    `Code-a-thon Feedback` = `Please provide any feedback that you think could help us improve the DaSEH Code-a-thon. You can provide anonymous feedback here: https://forms.gle/hQ7jdHZSZoDpHAdE6. (POST CODE-A-THON)`
+  ) %>%
+  mutate(`Code-a-thon` = paste(`Code-a-thon Modality`, `Code-a-thon Feedback`)) %>%
+  select(-`Code-a-thon Modality`, -`Code-a-thon Feedback`)
+```
+
+#Pivot to Long Format 
+
+```{r pivot}
+feedback_long <- feedback %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "response") %>%
+  filter(!is.na(response))
+```
+
+#Remove Stop Words 
+
+```{r stop words}
+tidy_feedback <- feedback_long %>%
+  unnest_tokens(word, response) %>%
+  anti_join(stop_words)
+```
+
+#Get Sentiment Lexicons 
+
+```{r sentiment lexicons}
+bing  <- get_sentiments("bing")
+afinn <- get_sentiments("afinn")
+nrc   <- textdata::lexicon_nrc()
+```
+
+#Bing Sentiments (Positive Sentiments - Negative Sentiments)
+
+```{r bing sentiments}
+bing_sentiments <- tidy_feedback %>%
+  inner_join(bing, by = "word") %>%
+  count(question, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>%
+  mutate(net_sentiment = positive - negative)
+
+
+p_bing <- ggplot(bing_sentiments, aes(x = reorder(question, net_sentiment),
+                                      y = net_sentiment,
+                                      fill = net_sentiment > 0)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_manual(values = c("TRUE" = "#5ab4ac", "FALSE" = "#d8b364")) +
+  labs(title = "(a)",
+       x = "Question", y = "Net Sentiment") +
+  theme_minimal(base_size = 12)
+```
+
+#Afinn Sentiments (Weighted from -5 to 5)
+
+```{r afinn sentiments}
+afinn_sentiments <- tidy_feedback %>%
+  inner_join(afinn, by = "word") %>%
+  group_by(question) %>%
+  summarise(afinn_score = sum(value), .groups = "drop")
+
+p_afinn <- ggplot(afinn_sentiments, aes(x = reorder(question, afinn_score),
+                                        y = afinn_score,
+                                        fill = afinn_score > 0)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  scale_fill_manual(values = c("TRUE" = "#5ab4ac", "FALSE" = "#d8b364")) +
+  labs(title = "(b)",
+       x = "Question", y = "AFINN Score") +
+  theme_minimal(base_size = 12)
+```
+
+#NRC Sentiments (with Emotions)
+
+```{r nrc sentiments}
+nrc_sentiments <- tidy_feedback %>%
+  inner_join(nrc, by = "word") %>%
+  count(question, sentiment, sort = TRUE)
+
+p_nrc <- nrc_sentiments %>%
+  filter(sentiment %in% c("positive","negative","joy","trust","anger","sadness")) %>%
+  ggplot(aes(x = reorder_within(sentiment, n, question), y = n, fill = sentiment)) +
+  geom_col(show.legend = TRUE) +
+  facet_wrap(~question, scales = "free_y") +
+  scale_x_reordered() +
+  coord_flip() +
+  scale_fill_manual(values = c(
+    "positive" = "#5ab4ac",
+    "negative" = "#d8b364",
+    "joy"      = "#5ab4ac",
+    "trust"    = "#5ab4ac",
+    "anger"    = "#d8b364",
+    "sadness"  = "#d8b364"
+  )) +
+  labs(title = "(c)",
+       x = "Sentiment Type", y = "Count", fill = "Emotion") +
+  theme_minimal(base_size = 12)
+```
+#Top 10 Positive and Negative Words
+
+```{r top words}
+top_words <- tidy_feedback %>%
+  inner_join(bing, by = "word") %>%
+  count(question, word, sentiment, sort = TRUE)
+
+p_topwords <- top_words %>%
+  group_by(question, sentiment) %>%
+  slice_max(n, n = 10, with_ties = FALSE) %>%
+  ungroup() %>%
+  mutate(sentiment = factor(sentiment, levels = c("positive", "negative"))) %>%
+  ggplot(aes(n, reorder_within(word, n, question), fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(question ~ sentiment, scales = "free_y") +
+  scale_y_reordered() +
+  scale_fill_manual(values = c(
+    "positive" = "#5ab4ac",
+    "negative" = "#d8b364"
+  )) +
+  labs(title = "(d)",
+       x = "Count", y = "Word") +
+  theme_minimal(base_size = 12)
+```
+
+
+```{r composite figure}
+combined_plot <- (p_bing / p_afinn / p_nrc / p_topwords) &
+  theme(strip.text = element_text(size = 9),
+        axis.text = element_text(size = 9),
+        plot.title = element_text(face = "bold", size = 13))
+
+ggsave("daseh_composite_sentiment.pdf", plot = combined_plot,
+       width = 8, height = 14, dpi = 300)
+
+ggsave("daseh_composite_sentiment.png", plot = combined_plot,
+       width = 8, height = 14, dpi = 300)
+
+combined_plot
+``` 
+
+#Word Cloud (Limited to 200 words)
+
+```{r word cloud}
+word_freq <- tidy_feedback %>%
+  count(word, sort = TRUE)
+
+par(mar = c(1, 1, 1, 1))
+
+wordcloud(words = word_freq$word,
+          freq = word_freq$n,
+          max.words = 200,               
+          scale = c(3.5, 0.7),              
+          random.order = FALSE,
+          rot.per = 0.15,                
+          colors = rep(c("#5ab4ac", "#d8b364"), length.out = 200))
+
+png("daseh_wordcloud.png", width = 2000, height = 1200, res = 200)
+wordcloud(words = word_freq$word,
+          freq = word_freq$n,
+          max.words = 200,
+          scale = c(3.5, 0.7),
+          random.order = FALSE,
+          rot.per = 0.15,
+          colors = rep(c("#5ab4ac", "#d8b364"), length.out = 200))
+
+dev.off()
+```
