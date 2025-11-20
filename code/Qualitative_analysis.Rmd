@@ -82,6 +82,11 @@ nrc <- textdata::lexicon_nrc()
 ```{r bing sentiments}
 bing_sentiments <- tidy_feedback %>%
   inner_join(bing, by = "word") %>%
+  mutate(question = factor(
+    question,
+    levels = c("Code-a-thon", "Online Course"),
+    labels = c("Codeathon", "Online Course")
+  )) %>%
   count(question, sentiment) %>%
   pivot_wider(names_from = sentiment,
               values_from = n,
@@ -98,6 +103,11 @@ p_bing <- ggplot(bing_sentiments) +
 ```{r afinn sentiments}
 afinn_sentiments <- tidy_feedback %>%
   inner_join(afinn, by = "word") %>%
+  mutate(question = factor(
+    question,
+    levels = c("Code-a-thon", "Online Course"),
+    labels = c("Codeathon", "Online Course")
+  )) %>%
   group_by(question) %>%
   summarise(afinn_score = sum(value), .groups = "drop")
 
