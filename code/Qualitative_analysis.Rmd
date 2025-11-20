@@ -22,35 +22,32 @@ When you click the **Knit** button a document will be generated that includes bo
 ## Load Libraries
 
 ```{r libraries}
-library(googlesheets4)
-library(tidyverse)
-library(readxl)
-library(wordcloud)
-library(ggplot2)
-library(textdata)  
-library(knitr)     
-library(patchwork)
+library(googlesheets4) # Access Google Sheets using the Sheets API V4 CRAN v1.1.1
+library(tidyverse) # Easily Install and Load the 'Tidyverse' CRAN v2.0.0
+library(tidytext) # Text Mining using 'dplyr', 'ggplot2', and Other Tidy Tools CRAN v0.4.2
+library(patchwork) # The Composer of Plots CRAN v1.2.0
+library(wordcloud) # Word Clouds CRAN v2.6
 ```
 
 ## Renaming and Combining
 
 ```{r cleanup}
-# # Authenticate once
-# gs4_auth(email = TRUE)
-# 
-# # Google Sheet links
-# qualitative_sheet_link <- "https://docs.google.com/spreadsheets/d/1t8Dgl_hcFBIg3QryEcNsAbB0asUDRGb_KjZoZVkcBHM/edit?usp=sharing"
-# 
-# feedback <-
-#   read_sheet(qualitative_sheet_link, sheet = "Qualitative") %>%
-#   rename(
-#     `Online Course` = `Please provide any feedback that you think could help us improve the DaSEH Online Course. (POST COURSE)`,
-#     `Code-a-thon Modality` = `Please provide any suggestions regarding the Code-a-thon modality. This could be logistics, timing, projects, topics covered, standups, code review, lightning talks, etc. (POST CODE-A-THON)`,
-#     `Code-a-thon Feedback` = `Please provide any feedback that you think could help us improve the DaSEH Code-a-thon. You can provide anonymous feedback here: https://forms.gle/hQ7jdHZSZoDpHAdE6. (POST CODE-A-THON)`
-#   ) %>%
-#   mutate(`Code-a-thon` = paste(`Code-a-thon Modality`, `Code-a-thon Feedback`)) %>%
-#   select(-`Code-a-thon Modality`, -`Code-a-thon Feedback`) %>% 
-#   select(-`...1`)
+# Authenticate once
+gs4_auth(email = TRUE)
+
+# Google Sheet links
+qualitative_sheet_link <- "https://docs.google.com/spreadsheets/d/1t8Dgl_hcFBIg3QryEcNsAbB0asUDRGb_KjZoZVkcBHM/edit?usp=sharing"
+
+feedback <-
+  read_sheet(qualitative_sheet_link, sheet = "Qualitative") %>%
+  rename(
+    `Online Course` = `Please provide any feedback that you think could help us improve the DaSEH Online Course. (POST COURSE)`,
+    `Code-a-thon Modality` = `Please provide any suggestions regarding the Code-a-thon modality. This could be logistics, timing, projects, topics covered, standups, code review, lightning talks, etc. (POST CODE-A-THON)`,
+    `Code-a-thon Feedback` = `Please provide any feedback that you think could help us improve the DaSEH Code-a-thon. You can provide anonymous feedback here: https://forms.gle/hQ7jdHZSZoDpHAdE6. (POST CODE-A-THON)`
+  ) %>%
+  mutate(`Code-a-thon` = paste(`Code-a-thon Modality`, `Code-a-thon Feedback`)) %>%
+  select(-`Code-a-thon Modality`, -`Code-a-thon Feedback`) %>%
+  select(-`...1`)
 ```
 
 ## Pivot to Long Format 
@@ -74,7 +71,7 @@ tidy_feedback <- feedback_long %>%
 ## Get Sentiment Lexicons 
 
 ```{r sentiment lexicons}
-# Must be run interactively
+# May need to be run interactively
 bing <- get_sentiments("bing")
 afinn <- get_sentiments("afinn")
 nrc <- textdata::lexicon_nrc()
@@ -230,7 +227,7 @@ combined_plot <-
 combined_plot
 
 ggsave(
-  "daseh_composite_sentiment.pdf",
+  "figures/daseh_composite_sentiment.pdf",
   plot = combined_plot,
   width = 8,
   height = 7,
@@ -247,7 +244,7 @@ word_freq <- tidy_feedback %>%
 par(mar = c(1, 1, 1, 1))
 
 png(
-  "daseh_wordcloud.png",
+  "figures/daseh_wordcloud.png",
   width = 2000,
   height = 1200,
   res = 200
@@ -265,3 +262,5 @@ wordcloud(
 
 dev.off()
 ```
+
+
