@@ -72,6 +72,8 @@ afinn <- get_sentiments("afinn") # ?textdata::lexicon_afinn
 
 ## Afinn Sentiments (Weighted from -5 to 5)
 
+We calculated sentiment for each optional free text response using the AFINN lexicon, which rates words between -5 (negative) and 5 (positive) (`?textdata::lexicon_afinn` for citation).
+
 Affinity scores of optional free text responses by student. Values reflect the sum total positive (green) and negative (yellow) words, where each relevant word can be assigned a value from -5 (most negative sentiment) to 5 (most positive sentiment). Neutral words were excluded. 
  
 ```{r afinn sentiments}
@@ -98,7 +100,9 @@ p_afinn <-
 
 ## Top Positive and Negative Words
 
-Most common words matching a positive or negative Bing lexicon sentiment across optional free text responses. Total occurrences are summed across respondents.
+We also counted the most common words with either positive or negative sentiment, according to the Bing lexicon  (`?textdata::lexicon_bing` for citation).
+
+Most common words (>= 2 occurrences) matching a positive or negative Bing lexicon sentiment across optional free text responses. Total occurrences are summed across respondents.
 
 ```{r top words}
 top_words <-
