@@ -150,7 +150,7 @@ p_topwords <-
 
 The following combines the previous two plots, writes to file, and adds themeing.
 
-
+Learners' optional free text responses for solicited feedback indicated generally positive sentiment for the online course, with some areas for improvement. In contrast, learners felt strongly positive about the codeathon. For both the online course and codeathon, words like "helpful" and "appreciated" were common. Learners also felt "break(s)" were important and mentioned them in both positive and negative contexts.
 
 ```{r composite figure}
 make_theme <- function(in_plot) {
