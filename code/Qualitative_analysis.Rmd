@@ -155,7 +155,6 @@ Learners' optional free text responses for solicited feedback indicated generall
 ```{r composite figure}
 make_theme <- function(in_plot) {
   in_plot +
-    theme_classic() +
     theme(
       axis.ticks = element_blank(),
       strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
@@ -164,6 +163,7 @@ make_theme <- function(in_plot) {
         color = 'grey70',
         fill = NA
       ),
+      panel.strip.color='#F0F0F0',
       legend.position = "none",
       plot.margin = unit(c(0, 0, 0, 0), "cm")
     )
