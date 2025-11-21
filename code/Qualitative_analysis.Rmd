@@ -66,9 +66,8 @@ tidy_feedback <- feedback_long %>%
 
 ```{r sentiment lexicons}
 # May need to be run interactively
-bing <- get_sentiments("bing")
-afinn <- get_sentiments("afinn")
-nrc <- textdata::lexicon_nrc()
+bing <- get_sentiments("bing") # ?textdata::lexicon_bing
+afinn <- get_sentiments("afinn") # ?textdata::lexicon_afinn
 ```
 
 ## Afinn Sentiments (Weighted from -5 to 5)
