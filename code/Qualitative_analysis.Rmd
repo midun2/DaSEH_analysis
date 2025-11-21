@@ -95,7 +95,7 @@ p_afinn <-
     "positive" = "#5ab4ac",
     "negative" = "#d8b364"
   )) +
-  labs(y = "Affinity score", x = "Student ID")
+  labs(y = "Affinity score", x = "Learner ID")
 ```
 
 ## Top Positive and Negative Words
@@ -149,6 +149,8 @@ p_topwords <-
 ## Make Composite Figure
 
 The following combines the previous two plots, writes to file, and adds themeing.
+
+
 
 ```{r composite figure}
 make_theme <- function(in_plot) {
