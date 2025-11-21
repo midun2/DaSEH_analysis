@@ -848,9 +848,9 @@ library(patchwork)
 
 # Map of question titles
 question_labels <- c(
-  score_Q1 = "Data Cleaning &\nPreprocessing",
-  score_Q2 = "Reproducibility &\nWorkflow Practice",
-  score_Q3 = "Analytical Reasoning &\nData Exploration"
+  score_Q1 = "Data cleaning & preprocessing",
+  score_Q2 = "Reproducibility & workflow",
+  score_Q3 = "Analytical reasoning & data exploration"
 )
 
 plot_emm_simple <- function(model, label) {
@@ -878,7 +878,6 @@ plot_emm_simple <- function(model, label) {
       x = NULL,
       y = "Predicted Score"
     ) +
-    theme_minimal(base_size = 12) +
     theme(plot.title = element_text(face = "bold", hjust = 0.5))
 }
 # Generate and save individual plots
@@ -890,8 +889,31 @@ p_q3 <- plot_emm_simple(model_q3, question_labels[["score_Q3"]])
 print(p_q1); ggsave("figures/emm_q1.png", p_q1, width = 6, height = 4, dpi = 300)
 print(p_q2); ggsave("figures/emm_q2.png", p_q2, width = 6, height = 4, dpi = 300)
 print(p_q3); ggsave("figures/emm_q3.png", p_q3, width = 6, height = 4, dpi = 300)
+```
 
+Make combined plots for all question domains
+
+```{r echo=F}
 # The following code not printed
+
+make_theme <- function(in_plot) {
+  in_plot +
+    theme(
+      axis.ticks = element_blank(),
+      strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
+      panel.background = element_rect(
+        size = 1,
+        color = 'grey70',
+        fill = NA
+      ),
+      legend.position = "none",
+      plot.margin = unit(c(0, 0, 0, 0), "cm")
+    )
+}
+
+p_q1 <- make_theme(p_q1)
+p_q2 <- make_theme(p_q2)
+p_q3 <- make_theme(p_q3)
 
 # Combine horizontally (side-by-side)
 p_combined_horizontal <- p_q1 + p_q2 + p_q3 + plot_layout(ncol = 3)
@@ -908,8 +930,55 @@ p_combined_vertical <- p_q1 / p_q2 / p_q3
 ggsave(
   filename = "figures/emm_combined_vertical.png",
   plot = p_combined_vertical,
-  width = 6,
-  height = 12,
+  width = 4,
+  height = 7,
+  dpi = 300
+)
+
+### All together, but faceted instead
+emm_df_all <-
+  as_tibble(emmeans(model_q1, specs = "survey")) %>%
+  mutate(question = "1_Data cleaning & preprocessing") %>%
+  bind_rows(as_tibble(emmeans(model_q2, specs = "survey")) %>%
+              mutate(question = "2_Reproducibility & workflow practice")) %>%
+  bind_rows(as_tibble(emmeans(model_q3, specs = "survey")) %>%
+              mutate(question = "3_Analytical reasoning & data exploration")) %>%
+  mutate(survey = factor(
+    survey,
+    levels = c("1_pre-course", "2_post-course", "3_post-codeathon"),
+    labels = c("Pre-course", "Post-course", "Post-codeathon")
+  )) %>%
+  mutate(question = factor(
+    question,
+    levels = c(
+      "1_Data cleaning & preprocessing",
+      "2_Reproducibility & workflow practice",
+      "3_Analytical reasoning & data exploration"
+    ),
+    labels = c(
+      "Data cleaning & preprocessing",
+      "Reproducibility & workflow practice",
+      "Analytical reasoning & data exploration"
+    )
+  ))
+
+p_combined_vertical <- 
+  make_theme(
+  ggplot(emm_df_all, aes(
+    x = survey, y = emmean, group = 1
+  )) +
+    geom_line(size = 1.2) +
+    geom_point(size = 3) +
+    geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.1) +
+    labs(x = NULL, y = "Predicted Score") +
+    facet_wrap( ~ question, ncol = 1)
+)
+
+ggsave(
+  filename = "figures/emm_combined_vertical.png",
+  plot = p_combined_vertical,
+  width = 4,
+  height = 7,
   dpi = 300
 )
 ```
