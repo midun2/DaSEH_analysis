@@ -635,6 +635,112 @@ plot(likert_dat_formatted, include.histogram = TRUE, text.size=4, ordered = FALS
 dev.off()
 ```
 
+Make a combined likert that is slightly more readable (bigger text).
+
+```{r}
+library(likert)
+library(cowplot)
+library(grid)
+library(dplyr)
+
+tool_labels <- list(comfort = "\nPerceived\ncomfort", confidence = "\nPerceived\nconfidence")
+
+tools_all <- names(the_labels)
+
+make_likert_plot <- function(tool, dat, make_hist = F) {
+  cols <- paste0(tool, c("1", "2", "3"))
+  print(cols %in% names(dat))
+  
+  likert_tool <- dat %>% select(all_of(cols))
+  names(likert_tool) <- c("Pre-course", "Post-course", "Post-codeathon")
+  
+  likert_tool[] <- lapply(likert_tool, function(x) {
+    factor(as.character(x), levels = c("1", "2", "3", "4", "5"))
+  })
+  
+  likert_obj <- likert(as.data.frame(likert_tool))
+  
+  if (!make_hist) {
+    likert.bar.plot(likert_obj, ordered = FALSE) +
+      theme(
+        axis.ticks = element_blank(),
+        strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
+        panel.background = element_rect(
+          size = 1,
+          color = 'grey70',
+          fill = NA
+        ),
+        legend.position = "none",
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(
+          size = 11,
+          angle = 0,
+          vjust = 0.8
+        ),
+        plot.margin = unit(c(0, 0, 0, 0.5), "cm")
+      ) + ylab(NULL) + xlab(tool_labels[[tool]])
+  } else {
+    likert.histogram.plot(likert_obj, text.size = 3,order = rev(names(likert_tool))) +
+      theme(
+        axis.ticks = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
+        panel.background = element_rect(
+          size = 1,
+          color = 'grey70',
+          fill = NA
+        ),
+        legend.position = "none",
+        axis.text.x = element_blank()
+      ) + ylab(NULL) + xlab(NULL)
+  }
+}
+
+likert_plots <- lapply(comf_conf_all, make_likert_plot, dat = daseh_dat_clean)
+hist_plots <- lapply(comf_conf_all,
+                     make_likert_plot,
+                     dat = daseh_dat_clean,
+                     make_hist = T)
+
+#Figure 3 in manuscript
+pdf("figures/likert_comfort_confidence.pdf", width = 7, height = 4)
+cowplot::plot_grid(
+  likert_plots[[1]] + theme(
+        plot.margin = unit(c(0, 0, 0, 0), "mm")),
+  hist_plots[[1]] + theme(
+        plot.margin = unit(c(0, 0, 0, 2), "mm")),
+  ggplot() + theme_void(),
+  ggplot() + theme_void(),
+  likert_plots[[2]]  +
+    theme(
+      legend.position = c(-0.1,-0.5),
+      axis.text.x = element_text(),
+      legend.direction = "horizontal",
+      legend.justification = "left",
+      plot.margin = unit(c(0, 0, 15, 0), "mm")
+    ) +
+    ylab("Percentage"),
+  hist_plots[[2]] +
+    theme(
+      legend.position = c(0,-0.5),
+      legend.justification = "center",
+      legend.direction = "horizontal",
+      axis.text.x = element_text(),
+      plot.margin = unit(c(0, 0, 15, 2), "mm")
+    ) +
+    ylab("Sample size"),
+  ncol = 2,
+  align = "h",
+  labels = c("(a)", rep("", 3), "(b)", rep("", 1)),
+  rel_heights = c(1, -0.3, 1),
+  rel_widths = c(1, 0.2)
+  #
+)
+dev.off()
+```
+
+
 How do students’ self-perception, as measured by confidence by topic change over time?
 
 ```{r}
