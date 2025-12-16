@@ -8,6 +8,14 @@ output:
 date: "2025-03-26"
 ---
 
+```{r}
+# Load required libraries
+library(tidyverse)     # For data manipulation, plotting, and reshaping
+library(googlesheets4) # For reading Google Sheets
+library(DescTools)     # For SignTest (non-parametric alternative)
+```
+
+
 This code analyzes data from three surveys and a summative assessment from a two-part data science course (DASEH) for environmental health professionals. The course consists of a 2-week online component and a 3-day in-person intensive codeathon.
 
 It covers two research questions:
@@ -16,15 +24,11 @@ It covers two research questions:
 How do students’ self-perception, as measured by comfort and confidence in data science, change over time (pre-course, post-course, and post-codeathon)?
 
 **Research Question 2:**
-How do hybrid models impact objective learning outcomes measured via a summative assessment?
+How does the blended model impact objective learning outcomes measured via a summative assessment?
 
 ## Data Wrangling 
 
 ```{r}
-library(tidyverse)
-library(googlesheets4)
-library(DescTools)
-
 # Authenticate once
 gs4_auth(email = TRUE)
 
@@ -46,13 +50,12 @@ postcourse <- get_clean_survey("2 - Post-course", "2_post-course") |> filter(!(r
 postcodeathon <- get_clean_survey("3 - Post-codeathon", "3_post-codeathon")
 
 # Load summative scores
-summative_assessment <- read_sheet(summative_sheet_link, sheet = "4 - Summative Assessment") |>
-  distinct(random_id, survey, question_number, .keep_all = TRUE) |>
-  select(random_id, survey, question_number, score) |>
-  mutate(score = as.numeric(score))
+summative_assessment <- 
+  read_sheet(summative_sheet_link, sheet = "4 - Summative Assessment", col_types = "ccnc") |>
+  distinct(random_id, survey, question_number, .keep_all = TRUE)
 ```
 
-## Research Question 1: Self-perception (Likert)
+## Research Question 1: Self-perception (Likert) - write the data
 
 ```{r}
 # Pull out Likert items only
@@ -142,27 +145,29 @@ daseh_dat_clean <-
 write.csv(daseh_dat_clean, "data/daseh_likert.csv", row.names = FALSE)
 ```
 
-## Research Question 2: Summative Assessment
+## Research Question 2: Summative Assessment - write the data
 
 ```{r}
 # Reshape to wide format
-summative_wide <- summative_assessment |> 
+summative_wide <- 
+  summative_assessment |> 
   pivot_wider(names_from = question_number, values_from = score, names_prefix = "score_") |>
   arrange(random_id, survey)
 
 # Rename columns
-summative_wide <- summative_wide |> rename(
-  id = random_id,
-  survey_label = survey,
-  Q1 = score_Q1,
-  Q2 = score_Q2,
-  Q3 = score_Q3
-)
+summative_wide <-
+  summative_wide |>
+  rename(
+    id = random_id,
+    survey_label = survey,
+    Q1 = score_Q1,
+    Q2 = score_Q2,
+    Q3 = score_Q3
+  )
 
 # Save clean version
 write.csv(summative_wide, "data/daseh_scores.csv", row.names = FALSE)
 ```
-
 
 # RESEARCH QUESTION 1
 
@@ -171,108 +176,87 @@ How do students’ self-perception, as measured by comfort and confidence in dat
 
 ## Data Analysis
 
-We asked whether students’ self rated comfort and confidence in data science improves over three timepoints, specifically, pre-course, post-course and post-codeathon.  Because each learner provides ratings at all three stages, we use within-subject (paired) tests of mean change.
+We asked whether students’ self rated comfort and confidence in data science improves over three timepoints, specifically, pre-course, post-course and post-codeathon.  We used within-subject (paired) tests of median change because learners are likely to have some baseline differences in background.
 
-Before testing, we check normality of the difference scores (Shapiro–Wilk test and QQ plots).  If normality holds, we report a one-sided paired t-test for each interval; if it fails, we bootstrap a 95% confidence interval for the mean change.
+Before testing, we check normality of the difference scores (Shapiro–Wilk test and QQ plots). If normality assumptions were violated, we use paired two-sample Wilcoxon tests below.
 
 Hypotheses (for both Comfort and Confidence):
-	•	H₀: Mean change = 0 (no improvement)
-	•	Hₐ: Mean change > 0 (improvement)
+	•	H₀: Median change = 0 (no improvement)
+	•	Hₐ: Median change > 0 (improvement)
 
 We perform two tests per outcome:
-	1.	Pre-course → Post-course
-	2.	Post-course → Post-codeathon
+	1.	Pre-course vs Post-course
+	2.	Post-course vs Post-codeathon
 	
 ### PART A: Comfort with Data Science
+
 This section analyses self perception, as measured by comfort ratings in data science skills over time (pre-course, post-course and post-codeathon).
 
 Descriptive Statistics
 
 ```{r}
-# Load required libraries
-library(tidyverse)     # For data manipulation, plotting, and reshaping
-library(googlesheets4) # For reading Google Sheets
-library(DescTools)     # For SignTest (non-parametric alternative)
-
 # Extract and reshape comfort data
-comfort_data <- daseh_dat_clean %>%
-  select(id, comfort1, comfort2, comfort3)
+comfort_data <-
+  daseh_dat_clean |>
+  dplyr::select(id, comfort1, comfort2, comfort3)
 
 # Pivot to long format, recode labels & order
-comfort_long <- comfort_data %>%
-  pivot_longer(
-    cols = starts_with("comfort"),
-    names_to  = "timepoint",
-    values_to = "comfort"
-  ) %>%
+comfort_long <-
+  comfort_data |>
+  pivot_longer(cols = starts_with("comfort"),
+               names_to  = "timepoint",
+               values_to = "comfort") |>
   mutate(
-    timepoint = dplyr::recode(timepoint,
+    timepoint = dplyr::recode(
+      timepoint,
       "comfort1" = "Pre-course",
       "comfort2" = "Post-course",
       "comfort3" = "Post-codeathon"
     ),
-    timepoint = factor(timepoint,
+    timepoint = factor(
+      timepoint,
       levels = c("Pre-course", "Post-course", "Post-codeathon")
     )
   )
 
 # Summary stats at each timepoint
-comfort_long %>%
-  group_by(timepoint) %>%
+comfort_summary <-
+  comfort_long |>
+  group_by(timepoint) |>
   summarize(
-    mean   = mean(comfort, na.rm = TRUE),
+    mean = mean(comfort, na.rm = TRUE),
     median = median(comfort, na.rm = TRUE),
-    sd     = sd(comfort, na.rm = TRUE)
-  ) %>%
-  print()
-
-# Boxplot for comfort at each timepoint
-comfort_plot <- ggplot(comfort_long, aes(x = timepoint, y = comfort)) +
-  geom_boxplot(outlier.alpha = 0.1) +
-  geom_jitter(width = 0.1) +
-  theme_minimal() +
-  labs(x = NULL, y = "Self-Rated Comfort with Data Science")
-
-print(comfort_plot)
-ggsave("figures/comfort_boxplot.png", comfort_plot, width = 6, height = 4, dpi = 300)
-
+    sd = sd(comfort, na.rm = TRUE)
+  ) |>
+  mutate(measure = "comfort") |>
+  dplyr::select(measure, timepoint, mean, median, sd)
 
 # Calculate learner-level changes
-comfort_change <- comfort_data %>%
+comfort_change <-
+  comfort_data |>
   mutate(
-    `Change Post-course`       = comfort2 - comfort1,
-    `Change Post-codeathon`  = comfort3 - comfort2
-  ) %>%
-  select(id, starts_with("Change"))
+    `Change Post-course` = comfort2 - comfort1,
+    `Change Post-codeathon` = comfort3 - comfort2
+  ) |>
+  dplyr::select(id, starts_with("Change"))
 
 # Pivot changes, recode & order
-comfort_change_long <- comfort_change %>%
-  pivot_longer(-id, names_to = "period", values_to = "change") %>%
-  mutate(
-    period = factor(period,
-      levels = c("Change Post-course", "Change Post-codeathon")
-    )
-  )
+comfort_change_long <-
+  comfort_change |>
+  pivot_longer(-id, names_to = "period", values_to = "change") |>
+  mutate(period = factor(period, levels = c(
+    "Change Post-course", "Change Post-codeathon"
+  )))
 
 # Summary stats for change
-comfort_change_long %>%
-  group_by(period) %>%
+comfort_change_summary <-
+  comfort_change_long |>
+  group_by(period) |>
   summarize(
-    mean   = mean(change, na.rm = TRUE),
+    mean = mean(change, na.rm = TRUE),
     median = median(change, na.rm = TRUE),
-    sd     = sd(change, na.rm = TRUE)
-  ) %>%
-  print()
-
-# Boxplot for change in comfort
-change_plot <- ggplot(comfort_change_long, aes(x = period, y = change)) +
-  geom_boxplot(outlier.alpha = 0.1) +
-  geom_jitter(width = 0.1) +
-  theme_minimal() +
-  labs(x = NULL, y = "Change in Self-Rated Comfort with Data Science")
-
-print(change_plot)
-ggsave("figures/comfort_change_boxplot.png", change_plot, width = 6, height = 4, dpi = 300)
+    sd = sd(change, na.rm = TRUE)
+  )
 ```
 
 Analytic Statistics
@@ -296,75 +280,53 @@ HA: The average difference is greater than zero.
 Since the same subjects are measured at different times, we calculate the difference for each participant and use a paired t-test (or a non-parametric alternative if normality is violated) on these difference scores.
 
 ```{r}
-# Load required libraries
-library(tidyverse)
-library(boot)
+pre_course_comfort <- daseh_dat_clean$comfort1
+shapiro.test(pre_course_comfort) # Outcome: not normal
 
-# 1. Compute comfort change scores with clear names
-comfort_changes <- daseh_dat_clean %>%
-  transmute(
-    `Change Post-course`      = comfort2 - comfort1,
-    `Change Post-codeathon` = comfort3 - comfort2
+post_course_comfort <- daseh_dat_clean$comfort2
+shapiro.test(post_course_comfort) # Outcome: not normal
+
+post_codeathon_comfort <- daseh_dat_clean$comfort3
+shapiro.test(post_codeathon_comfort) # Outcome: not normal
+
+comfort_test_course <- broom::tidy(
+  wilcox.test(
+    daseh_dat_clean$comfort2,
+    daseh_dat_clean$comfort1,
+    paired = TRUE,
+    alternative = "greater"
   )
-
-# 2. Helper for bootstrapped mean inference
-bootstrap_inference <- function(x, R = 2000) {
-  b     <- boot(x, statistic = function(d, i) mean(d[i], na.rm = TRUE), R = R)
-  ci    <- boot.ci(b, type = "perc")$percent[4:5]
-  p_emp <- mean(b$t <= 0)  # one-sided p-value
-  list(ci = ci, p_emp = p_emp)
-}
-
-# 3. Loop over each interval: normality → QQ‐plot → paired t-test → (if needed) bootstrap
-for (interval in names(comfort_changes)) {
-  diff_vec <- comfort_changes[[interval]]
-  sw       <- shapiro.test(diff_vec)
-  
-  cat("\n---\nResults for", interval, "\n")
-  cat(sprintf("Shapiro–Wilk: W = %.3f, p = %.3f\n", sw$statistic, sw$p.value))
-  
-  # QQ‐plot for visual normality check
-  qqnorm(diff_vec, main = paste("QQ Plot:", interval))
-  qqline(diff_vec)
-  
-  # Paired one-sample t-test of mean change
-  tt <- t.test(diff_vec, mu = 0, alternative = "greater")
-  cat("Paired t-test:\n"); print(tt)
-  
-  # If non-normal, add bootstrap inference on the mean
-  if (sw$p.value < 0.05) {
-    cat("Data not normal → bootstrap inference:\n")
-    boot_res <- bootstrap_inference(diff_vec)
-    cat(sprintf(" 95%% CI for mean: [%.2f, %.2f]\n", 
-                boot_res$ci[1], boot_res$ci[2]))
-    cat(sprintf(" Bootstrap p-value: %.3f\n", 
-                boot_res$p_emp))
-  }
-}
+)
+comfort_test_codeathon <- broom::tidy(
+  wilcox.test(
+    daseh_dat_clean$comfort3,
+    daseh_dat_clean$comfort2,
+    paired = TRUE,
+    alternative = "greater"
+  )
+)
 ```
 
 ### PART B: Confidence with Data Science
+
 This section analyzes self-perception, as measured by confidence ratings in data science skills over three time points: pre-course, post-course, and post-codeathon.
 
 Descriptive Statistics
 
 ```{r}
-# Load required libraries
-library(tidyverse)       # data manipulation & plotting
-library(googlesheets4)   # reading Google Sheets
-library(DescTools)       # SignTest (if needed)
-
 # Extract and reshape confidence data
-confidence_data <- daseh_dat_clean %>%
-  select(id, confidence1, confidence2, confidence3)
+confidence_data <- 
+  daseh_dat_clean |>
+  dplyr::select(id, confidence1, confidence2, confidence3)
 
 # Pivot to long format, recode labels & lock in order
-confidence_long <- confidence_data %>%
+confidence_long <- 
+  confidence_data |>
   pivot_longer(
     cols = starts_with("confidence"),
     names_to  = "timepoint",
     values_to = "confidence"
-  ) %>%
+  ) |>
   mutate(
     timepoint = dplyr::recode(timepoint,
       "confidence1" = "Pre-course",
@@ -377,35 +339,30 @@ confidence_long <- confidence_data %>%
   )
 
 # Summary stats at each timepoint
-confidence_long %>%
-  group_by(timepoint) %>%
+confidence_summary <-
+  confidence_long |>
+  group_by(timepoint) |>
   summarize(
     mean   = mean(confidence, na.rm = TRUE),
     median = median(confidence, na.rm = TRUE),
     sd     = sd(confidence, na.rm = TRUE)
-  ) %>%
-  print()
-
-# Boxplot for confidence at each timepoint
-confidence_plot <- ggplot(confidence_long, aes(x = timepoint, y = confidence)) +
-  geom_boxplot(outlier.alpha = 0.1) +
-  geom_jitter(width = 0.1) +
-  theme_minimal(base_size = 14) +
-  labs(x = NULL, y = "Self-Rated Confidence with Data Science Tools")
-print(confidence_plot)
-ggsave("figures/confidence_boxplot.png", confidence_plot, dpi = 300)
+  ) |>
+  mutate(measure = "confidence") |> 
+  dplyr::select(measure, timepoint, mean, median, sd)
 
 # Calculate learner-level changes
-confidence_change <- confidence_data %>%
+confidence_change <- 
+  confidence_data |>
   mutate(
     `Change Post-course`       = confidence2 - confidence1,
     `Change Post-codeathon`  = confidence3 - confidence2
-  ) %>%
-  select(id, starts_with("Change"))
+  ) |>
+  dplyr::select(id, starts_with("Change"))
 
 # Pivot changes, recode & lock in order
-confidence_change_long <- confidence_change %>%
-  pivot_longer(-id, names_to = "period", values_to = "change") %>%
+confidence_change_long <- 
+  confidence_change |>
+  pivot_longer(-id, names_to = "period", values_to = "change") |>
   mutate(
     period = factor(period,
       levels = c("Change Post-course", "Change Post-codeathon")
@@ -413,28 +370,14 @@ confidence_change_long <- confidence_change %>%
   )
 
 # Summary stats for change in confidence
-confidence_change_long %>%
-  group_by(period) %>%
+confidence_change_summary <- 
+  confidence_change_long |>
+  group_by(period) |>
   summarize(
     mean   = mean(change, na.rm = TRUE),
     median = median(change, na.rm = TRUE),
     sd     = sd(change, na.rm = TRUE)
-  ) %>%
-  print()
-
-# Boxplot for change in confidence
-# Boxplot for change in confidence
-change_plot <- ggplot(confidence_change_long, aes(x = period, y = change)) +
-  geom_boxplot(outlier.alpha = 0.1) +
-  geom_jitter(width = 0.1) +
-  theme_minimal() +
-  labs(
-    x = NULL,
-    y = "Change in Self-Rated Confidence \n with Data Science"
   )
-
-print(change_plot)
-ggsave("figures/confidence_change_boxplot.png", change_plot, width = 6, height = 4, dpi = 300)
 ```
 
 Analytic Statistics 
@@ -454,51 +397,48 @@ Hₐ: The difference is greater than zero.
 Since the same subjects are measured at different times, we calculate the difference for each participant and use a paired t-test (or a non-parametric alternative if normality is violated) on these difference scores.
 
 ```{r}
-# Load required libraries
-library(tidyverse)
-library(boot)
+pre_course_confidence <- daseh_dat_clean$confidence1
+shapiro.test(pre_course_confidence) # Outcome: not normal
 
-# 1. Compute confidence change scores with clear names
-conf_changes <- daseh_dat_clean %>%
-  transmute(
-    `Change Post-course`      = confidence2 - confidence1,
-    `Change Post-codeathon` = confidence3 - confidence2
+post_course_confidence <- daseh_dat_clean$confidence2
+shapiro.test(post_course_confidence) # Outcome: not normal
+
+post_codeathon_confidence <- daseh_dat_clean$confidence3
+shapiro.test(post_codeathon_confidence) # Outcome: not normal
+
+confidence_test_course <- broom::tidy(
+  wilcox.test(
+    daseh_dat_clean$confidence2,
+    daseh_dat_clean$confidence1,
+    paired = TRUE,
+    alternative = "greater"
   )
+)
+confidence_test_codeathon <- broom::tidy(
+  wilcox.test(
+    daseh_dat_clean$confidence3,
+    daseh_dat_clean$confidence2,
+    paired = TRUE,
+    alternative = "greater"
+  )
+)
+```
 
-# 2. Helper for bootstrapped mean inference
-bootstrap_inference <- function(x, R = 2000) {
-  b     <- boot(x, statistic = function(d, i) mean(d[i], na.rm = TRUE), R = R)
-  ci    <- boot.ci(b, type = "perc")$percent[4:5]
-  p_emp <- mean(b$t <= 0)  # one‐sided p‐value
-  list(ci = ci, p_emp = p_emp)
-}
+Gather statistical finding for the paper:
 
-# 3. Loop over each interval: normality → QQ‐plot → paired t-test → (if needed) bootstrap
-for (interval in names(conf_changes)) {
-  diff_vec <- conf_changes[[interval]]
-  sw       <- shapiro.test(diff_vec)
-  
-  cat("\n---\nResults for", interval, "\n")
-  cat(sprintf("Shapiro–Wilk: W = %.3f, p = %.3f\n", sw$statistic, sw$p.value))
-  
-  # QQ‐plot for visual normality check
-  qqnorm(diff_vec, main = paste("QQ Plot:", interval))
-  qqline(diff_vec)
-  
-  # Paired one‐sample t-test of mean change
-  tt <- t.test(diff_vec, mu = 0, alternative = "greater")
-  cat("Paired t-test:\n"); print(tt)
-  
-  # If non-normal, add bootstrap inference on the mean
-  if (sw$p.value < 0.05) {
-    cat("Data not normal → bootstrap inference:\n")
-    boot_res <- bootstrap_inference(diff_vec)
-    cat(sprintf(" 95%% CI for mean: [%.2f, %.2f]\n", 
-                boot_res$ci[1], boot_res$ci[2]))
-    cat(sprintf(" Bootstrap p-value: %.3f\n", 
-                boot_res$p_emp))
-  }
-}
+```{r}
+rbind(
+  comfort_summary,
+  confidence_summary
+)
+
+# Print results with p-adjustment
+rbind(
+  comfort_test_course,
+  comfort_test_codeathon,
+  confidence_test_course,
+  confidence_test_codeathon
+) |> mutate(p.value = p.adjust(p.value))
 ```
 
 ### PART C: Skills Improvement
@@ -506,19 +446,16 @@ for (interval in names(conf_changes)) {
 In this part, there is no pre-course rating. We report summary statistics for skills improvement after the online course (Survey 2) and after the codeathon (Survey 3).
 
 ```{r}
-# Load required libraries
-library(tidyverse)
-
 # Extract and reshape skills improvement data
-skills_data <- daseh_dat_clean %>%
-  select(id, skills_improvement_2, skills_improvement_3)
+skills_data <- daseh_dat_clean |>
+  dplyr::select(id, skills_improvement_2, skills_improvement_3)
 
-skills_long <- skills_data %>%
+skills_long <- skills_data |>
   pivot_longer(
     cols      = starts_with("skills_improvement"),
     names_to  = "timepoint",
     values_to = "rating"
-  ) %>%
+  ) |>
   mutate(
     timepoint = dplyr::recode(timepoint,
       "skills_improvement_2" = "Post-course",
@@ -530,8 +467,8 @@ skills_long <- skills_data %>%
   )
 
 # Summary stats at each timepoint
-skills_stats <- skills_long %>%
-  group_by(timepoint) %>%
+skills_stats <- skills_long |>
+  group_by(timepoint) |>
   summarize(
     mean   = mean(rating, na.rm = TRUE),
     median = median(rating, na.rm = TRUE),
@@ -540,23 +477,13 @@ skills_stats <- skills_long %>%
 
 print("Skills Improvement Summary:")
 print(skills_stats)
-
-# Boxplot for skills improvement
-skills_plot <- ggplot(skills_long, aes(x = timepoint, y = rating)) +
-  geom_boxplot(outlier.alpha = 0.1) +
-  geom_jitter(width = 0.1) +
-  theme_minimal(base_size = 14) +
-  labs(x = NULL, y = "Self-rated Skills Improvement")
-
-print(skills_plot)
-ggsave("figures/skills_improvement_boxplot.png", skills_plot, width = 6, height = 4, dpi = 300)
 ```
 
 ```{r}
 # For each timepoint, check if ratings exceed the floor of 1
 for(tp in levels(skills_long$timepoint)) {
-  vec <- skills_long %>% 
-    filter(timepoint == tp) %>% 
+  vec <- skills_long |> 
+    filter(timepoint == tp) |> 
     pull(rating)
   
   # 1) Normality check
@@ -588,7 +515,7 @@ How do students’ self-perception, as measured by comfort change over time?
 library(grid)
 library(likert)
 
-likert_dat <- daseh_dat_clean %>% select(id, comfort1, comfort2, comfort3)
+likert_dat <- daseh_dat_clean |> select(id, comfort1, comfort2, comfort3)
 likert_dat$comfort1 <- factor(likert_dat$comfort1, levels = c(1,2,3,4,5))
 likert_dat$comfort2 <- factor(likert_dat$comfort2, levels = c(1,2,3,4,5))
 likert_dat$comfort3 <- factor(likert_dat$comfort3, levels = c(1,2,3,4,5))
@@ -615,7 +542,7 @@ How do students’ self-perception, as measured by confidence change over time?
 library(grid)
 library(likert)
 
-likert_dat <- daseh_dat_clean %>% select(id, confidence1, confidence2, confidence3)
+likert_dat <- daseh_dat_clean |> select(id, confidence1, confidence2, confidence3)
 likert_dat$confidence1 <- factor(likert_dat$confidence1, levels = c(1,2,3,4,5))
 likert_dat$confidence2 <- factor(likert_dat$confidence2, levels = c(1,2,3,4,5))
 likert_dat$confidence3 <- factor(likert_dat$confidence3, levels = c(1,2,3,4,5))
@@ -651,7 +578,7 @@ make_likert_plot <- function(tool, dat, make_hist = F) {
   cols <- paste0(tool, c("1", "2", "3"))
   print(cols %in% names(dat))
   
-  likert_tool <- dat %>% select(all_of(cols))
+  likert_tool <- dat |> select(all_of(cols))
   names(likert_tool) <- c("Pre-course", "Post-course", "Post-codeathon")
   
   likert_tool[] <- lapply(likert_tool, function(x) {
@@ -771,7 +698,7 @@ make_likert_plot <- function(tool, dat) {
   cols <- paste0(tool, c("_1", "_2", "_3"))
   print(cols %in% names(dat))
   
-  likert_tool <- dat %>% select(all_of(cols))
+  likert_tool <- dat |> select(all_of(cols))
   names(likert_tool) <- c("Pre-course", "Post-course", "Post-codeathon")
   
   likert_tool[] <- lapply(likert_tool, function(x) {
@@ -833,7 +760,7 @@ How do students’ skills improve over time?
 library(grid)
 library(likert)
 
-likert_dat <- daseh_dat_clean %>% select(id, skills_improvement_2, skills_improvement_3)
+likert_dat <- daseh_dat_clean |> select(id, skills_improvement_2, skills_improvement_3)
 likert_dat$skills_improvement_2 <- factor(likert_dat$skills_improvement_2, levels = c(1,2,3,4,5))
 likert_dat$skills_improvement_3 <- factor(likert_dat$skills_improvement_3, levels = c(1,2,3,4,5))
 names(likert_dat) <- c("ID", "Post-course", "Post-codeathon")
@@ -862,7 +789,7 @@ dev.off()
 
 # RESEARCH QUESTION 2:
 
-How do hybrid models impact objective learning outcomes measured via a summative assessment?
+How do blended models impact objective learning outcomes measured via a summative assessment?
 
 The script uses the following libraries:
 
@@ -881,16 +808,16 @@ Prepare Summative Assessment Data
 ```{r}
 # Read the data, remove duplicate entries per participant, survey, and question,
 # rename "Random ID" to random_id, select relevant columns, and convert score to numeric.
-summative_assessment <- read_sheet(summative_sheet_link, sheet = "4 - Summative Assessment") %>% 
-  distinct(`random_id`, survey, question_number, .keep_all = TRUE) %>% 
-  select(random_id, survey, question_number, score) %>% 
+summative_assessment <- read_sheet(summative_sheet_link, sheet = "4 - Summative Assessment") |> 
+  distinct(`random_id`, survey, question_number, .keep_all = TRUE) |> 
+  select(random_id, survey, question_number, score) |> 
   mutate(score = as.numeric(score))
 
 # Each row will have a random_id, survey, and separate columns for each question's score.
-summative_wide <- summative_assessment %>%
+summative_wide <- summative_assessment |>
   pivot_wider(names_from = question_number, 
               values_from = score, 
-              names_prefix = "score_") %>%
+              names_prefix = "score_") |>
   arrange(random_id, survey)
 
 # Print the full wide-format data.
@@ -907,14 +834,14 @@ library(dplyr)
 library(stringr)
 library(tidyr)
 
-df_questions_long <- summative_wide %>%
-  select(random_id, survey, score_Q1, score_Q2, score_Q3) %>%
+df_questions_long <- summative_wide |>
+  select(random_id, survey, score_Q1, score_Q2, score_Q3) |>
   pivot_longer(
     cols = starts_with("score_Q"),
     names_to = "question",
     values_to = "score"
-  ) %>%
-  filter(!is.na(score)) %>%
+  ) |>
+  filter(!is.na(score)) |>
   mutate(
     survey = factor(survey, levels = c("1_pre-course", "2_post-course", "3_post-codeathon")),
     random_id = factor(random_id),
@@ -935,13 +862,13 @@ Fit Models by Question (Q1, Q2, Q3)
 library(lme4)
 
 model_q1 <- lmer(score ~ survey + (1 | random_id),
-                 data = df_questions_long %>% filter(question == "score_Q1"))
+                 data = df_questions_long |> filter(question == "score_Q1"))
 
 model_q2 <- lmer(score ~ survey +  (1 | random_id),
-                 data = df_questions_long %>% filter(question == "score_Q2"))
+                 data = df_questions_long |> filter(question == "score_Q2"))
 
 model_q3 <- lmer(score ~ survey +  (1 | random_id),
-                 data = df_questions_long %>% filter(question == "score_Q3"))
+                 data = df_questions_long |> filter(question == "score_Q3"))
 
 ```
 
@@ -966,7 +893,7 @@ plot_emm_simple <- function(model, label) {
   # print(unique(emm_df$survey))
 
   # Proper relabeling using factor() with correct levels
-  emm_df <- emm_df %>%
+  emm_df <- emm_df |>
     mutate(
       survey = factor(
         survey,
@@ -1043,17 +970,17 @@ ggsave(
 
 ### All together, but faceted instead
 emm_df_all <-
-  as_tibble(emmeans(model_q1, specs = "survey")) %>%
-  mutate(question = "1_Data cleaning & preprocessing") %>%
-  bind_rows(as_tibble(emmeans(model_q2, specs = "survey")) %>%
-              mutate(question = "2_Reproducibility & workflow practice")) %>%
-  bind_rows(as_tibble(emmeans(model_q3, specs = "survey")) %>%
-              mutate(question = "3_Analytical reasoning & data exploration")) %>%
+  as_tibble(emmeans(model_q1, specs = "survey")) |>
+  mutate(question = "1_Data cleaning & preprocessing") |>
+  bind_rows(as_tibble(emmeans(model_q2, specs = "survey")) |>
+              mutate(question = "2_Reproducibility & workflow practice")) |>
+  bind_rows(as_tibble(emmeans(model_q3, specs = "survey")) |>
+              mutate(question = "3_Analytical reasoning & data exploration")) |>
   mutate(survey = factor(
     survey,
     levels = c("1_pre-course", "2_post-course", "3_post-codeathon"),
     labels = c("Pre-course", "Post-course", "Post-codeathon")
-  )) %>%
+  )) |>
   mutate(question = factor(
     question,
     levels = c(
