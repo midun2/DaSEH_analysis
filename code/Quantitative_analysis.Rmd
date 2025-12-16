@@ -8,11 +8,15 @@ output:
 date: "2025-03-26"
 ---
 
+# Load Libraries and Data Gathering
+
 ```{r}
 # Load required libraries
 library(tidyverse)     # For data manipulation, plotting, and reshaping
 library(googlesheets4) # For reading Google Sheets
-library(DescTools)     # For SignTest (non-parametric alternative)
+library(likert)        # Easy Likert data plotting
+library(lme4)          # Modeling summative assessment questions
+library(emmeans)       # Some plotting applications for summative assessments
 ```
 
 
@@ -438,7 +442,9 @@ rbind(
   comfort_test_codeathon,
   confidence_test_course,
   confidence_test_codeathon
-) |> mutate(p.value = p.adjust(p.value))
+) |> 
+  mutate(p.adj = p.adjust(p.value)) |> 
+  dplyr::select(statistic, p.value, p.adj)
 ```
 
 ### PART C: Skills Improvement
@@ -475,117 +481,31 @@ skills_stats <- skills_long |>
     sd     = sd(rating, na.rm = TRUE)
   )
 
-print("Skills Improvement Summary:")
-print(skills_stats)
+# Print stats for the paper
+skills_stats
 ```
 
-```{r}
-# For each timepoint, check if ratings exceed the floor of 1
-for(tp in levels(skills_long$timepoint)) {
-  vec <- skills_long |> 
-    filter(timepoint == tp) |> 
-    pull(rating)
-  
-  # 1) Normality check
-  sw <- shapiro.test(vec)
-  cat("\n---\n", tp, "ratings:\n")
-  cat(sprintf("Shapiro–Wilk: W = %.3f, p = %.3f\n", sw$statistic, sw$p.value))
-  
-  # 2) QQ-plot
-  qqnorm(vec, main = paste("QQ Plot:", tp, "Ratings"))
-  qqline(vec)
-  
-  # 3) Conditional test vs 1
-  if (sw$p.value < 0.05) {
-    cat(tp, "non-normal → Wilcoxon signed-rank test vs 1:\n")
-    wt <- wilcox.test(vec, mu = 1, alternative = "greater", exact = FALSE)
-    print(wt)
-  } else {
-    cat(tp, "normal → one-sample t-test vs 1:\n")
-    tt <- t.test(vec, mu = 1, alternative = "greater")
-    print(tt)
-  }
-}
-```
-
-LIKERT PLOTS 
-How do students’ self-perception, as measured by comfort change over time?
-
-```{r}
-library(grid)
-library(likert)
-
-likert_dat <- daseh_dat_clean |> select(id, comfort1, comfort2, comfort3)
-likert_dat$comfort1 <- factor(likert_dat$comfort1, levels = c(1,2,3,4,5))
-likert_dat$comfort2 <- factor(likert_dat$comfort2, levels = c(1,2,3,4,5))
-likert_dat$comfort3 <- factor(likert_dat$comfort3, levels = c(1,2,3,4,5))
-names(likert_dat) <- c("ID", "Pre-course", "Post-course", "Post-codeathon")
-likert_dat_formatted <- likert(as.data.frame(likert_dat[, c(2:4), drop = FALSE]))
-
-# Reverse order on plot
-likert_dat_formatted$results$Item <- factor(
-  likert_dat_formatted$results$Item,
-  levels = c("Post-codeathon", "Post-course", "Pre-course")
-)
-par(mar=c(1,10,1,1))
-plot(likert_dat_formatted, include.histogram = TRUE, ordered = FALSE) 
-
-#Figure 1 in manuscript
-pdf("figures/likert_comfort.pdf", width = 9, height = 3)
-plot(likert_dat_formatted, include.histogram = TRUE, text.size=4, ordered = FALSE)
-dev.off()
-```
-
-How do students’ self-perception, as measured by confidence change over time?
-
-```{r}
-library(grid)
-library(likert)
-
-likert_dat <- daseh_dat_clean |> select(id, confidence1, confidence2, confidence3)
-likert_dat$confidence1 <- factor(likert_dat$confidence1, levels = c(1,2,3,4,5))
-likert_dat$confidence2 <- factor(likert_dat$confidence2, levels = c(1,2,3,4,5))
-likert_dat$confidence3 <- factor(likert_dat$confidence3, levels = c(1,2,3,4,5))
-names(likert_dat) <- c("ID", "Pre-course", "Post-course", "Post-codeathon")
-likert_dat_formatted <- likert(as.data.frame(likert_dat[, c(2:4), drop = FALSE]))
-
-# Reverse order on plot
-likert_dat_formatted$results$Item <- factor(
-  likert_dat_formatted$results$Item,
-  levels = c("Post-codeathon", "Post-course", "Pre-course")
-)
-plot(likert_dat_formatted, include.histogram = TRUE, ordered = FALSE)
-
-#Figure 2 in manuscript
-pdf("figures/likert_confidence.pdf", width = 9, height = 3)
-plot(likert_dat_formatted, include.histogram = TRUE, text.size=4, ordered = FALSE)
-dev.off()
-```
+### LIKERT PLOTS 
 
 Make a combined likert that is slightly more readable (bigger text).
 
 ```{r}
-library(likert)
-library(cowplot)
-library(grid)
-library(dplyr)
+the_labels <- list(comfort = "\nPerceived\ncomfort", confidence = "\nPerceived\nconfidence")
 
-tool_labels <- list(comfort = "\nPerceived\ncomfort", confidence = "\nPerceived\nconfidence")
+likert_items <- names(the_labels)
 
-tools_all <- names(the_labels)
-
-make_likert_plot <- function(tool, dat, make_hist = F) {
-  cols <- paste0(tool, c("1", "2", "3"))
+make_likert_plot <- function(item, dat, make_hist = F) {
+  cols <- paste0(item, c("1", "2", "3"))
   print(cols %in% names(dat))
   
-  likert_tool <- dat |> select(all_of(cols))
-  names(likert_tool) <- c("Pre-course", "Post-course", "Post-codeathon")
+  likert_item <- dat |> select(all_of(cols))
+  names(likert_item) <- c("Pre-course", "Post-course", "Post-codeathon")
   
-  likert_tool[] <- lapply(likert_tool, function(x) {
+  likert_item[] <- lapply(likert_item, function(x) {
     factor(as.character(x), levels = c("1", "2", "3", "4", "5"))
   })
   
-  likert_obj <- likert(as.data.frame(likert_tool))
+  likert_obj <- likert(as.data.frame(likert_item))
   
   if (!make_hist) {
     likert.bar.plot(likert_obj, ordered = FALSE) +
@@ -605,9 +525,9 @@ make_likert_plot <- function(tool, dat, make_hist = F) {
           vjust = 0.8
         ),
         plot.margin = unit(c(0, 0, 0, 0.5), "cm")
-      ) + ylab(NULL) + xlab(tool_labels[[tool]])
+      ) + ylab(NULL) + xlab(the_labels[[item]])
   } else {
-    likert.histogram.plot(likert_obj, text.size = 3,order = rev(names(likert_tool))) +
+    likert.histogram.plot(likert_obj, text.size = 3,order = rev(names(likert_item))) +
       theme(
         axis.ticks = element_blank(),
         axis.text.y = element_blank(),
@@ -624,8 +544,8 @@ make_likert_plot <- function(tool, dat, make_hist = F) {
   }
 }
 
-likert_plots <- lapply(comf_conf_all, make_likert_plot, dat = daseh_dat_clean)
-hist_plots <- lapply(comf_conf_all,
+likert_plots <- lapply(likert_items, make_likert_plot, dat = daseh_dat_clean)
+hist_plots <- lapply(likert_items,
                      make_likert_plot,
                      dat = daseh_dat_clean,
                      make_hist = T)
@@ -667,15 +587,9 @@ cowplot::plot_grid(
 dev.off()
 ```
 
-
-How do students’ self-perception, as measured by confidence by topic change over time?
+How do students’ self-perception, as measured by confidence BY TOPIC change over time?
 
 ```{r}
-library(likert)
-library(cowplot)
-library(grid)
-library(dplyr)
-
 tool_labels <- list(
   rmarkdown = "RMarkdown",
   rstudio = "RStudio",
@@ -754,102 +668,12 @@ cowplot::plot_grid(
 dev.off()
 ```
 
-How do students’ skills improve over time?
-
-```{r}
-library(grid)
-library(likert)
-
-likert_dat <- daseh_dat_clean |> select(id, skills_improvement_2, skills_improvement_3)
-likert_dat$skills_improvement_2 <- factor(likert_dat$skills_improvement_2, levels = c(1,2,3,4,5))
-likert_dat$skills_improvement_3 <- factor(likert_dat$skills_improvement_3, levels = c(1,2,3,4,5))
-names(likert_dat) <- c("ID", "Post-course", "Post-codeathon")
-likert_dat_formatted <- likert(as.data.frame(likert_dat[, c(2:3), drop = FALSE]))
-
-# Reverse order on plot
-likert_dat_formatted$results$Item <- factor(
-  likert_dat_formatted$results$Item,
-  levels = c("Post-codeathon", "Post-course")
-)
-
-#Figure 4 in manuscript
-pdf("figures/likert_skills_improvement.pdf", width = 9, height = 3)
-plot(
-  likert_dat_formatted,
-  include.histogram = TRUE,
-  centered = FALSE,
-  plot.percent.neutral = FALSE,
-  text.size = 4,
-  ordered = FALSE,
-  main = "Skills Improvement (Post-course Only)"
-)
-dev.off()
-```
-
 
 # RESEARCH QUESTION 2:
 
 How do blended models impact objective learning outcomes measured via a summative assessment?
 
 The script uses the following libraries:
-
-tidyverse: For data manipulation, plotting, and reshaping.
-
-googlesheets4: To read survey and summative data from Google Sheets.
-
-DescTools: For the Sign Test (used in non-parametric testing).
-
-
-## Data Wrangling
-Data wrangling is the process of cleaning, transforming, and merging raw data into a structured format ready for analysis.
-
-Prepare Summative Assessment Data
-
-```{r}
-# Read the data, remove duplicate entries per participant, survey, and question,
-# rename "Random ID" to random_id, select relevant columns, and convert score to numeric.
-summative_assessment <- read_sheet(summative_sheet_link, sheet = "4 - Summative Assessment") |> 
-  distinct(`random_id`, survey, question_number, .keep_all = TRUE) |> 
-  select(random_id, survey, question_number, score) |> 
-  mutate(score = as.numeric(score))
-
-# Each row will have a random_id, survey, and separate columns for each question's score.
-summative_wide <- summative_assessment |>
-  pivot_wider(names_from = question_number, 
-              values_from = score, 
-              names_prefix = "score_") |>
-  arrange(random_id, survey)
-
-# Print the full wide-format data.
-print("Wide-format Summative Data (all records):")
-print(summative_wide)
-```
-
-Reshape scores to long format (Q1, Q2, Q3)
-
-```{r}
-library(lme4)
-library(lmerTest)
-library(dplyr)
-library(stringr)
-library(tidyr)
-
-df_questions_long <- summative_wide |>
-  select(random_id, survey, score_Q1, score_Q2, score_Q3) |>
-  pivot_longer(
-    cols = starts_with("score_Q"),
-    names_to = "question",
-    values_to = "score"
-  ) |>
-  filter(!is.na(score)) |>
-  mutate(
-    survey = factor(survey, levels = c("1_pre-course", "2_post-course", "3_post-codeathon")),
-    random_id = factor(random_id),
-    question = factor(question, levels = c("score_Q1", "score_Q2", "score_Q3")),
-  )
-```
-
-## Data Analysis 
 
 In this analysis, we used a linear mixed effects model (LMM) to evaluate changes in participants’ summative assessment scores over time for every question.
 
@@ -858,27 +682,36 @@ By using a linear mixed effects model, we retain more data, properly model indiv
 Fit Models by Question (Q1, Q2, Q3)
 
 ```{r}
+library(lmerTest)
 
-library(lme4)
-
-model_q1 <- lmer(score ~ survey + (1 | random_id),
-                 data = df_questions_long |> filter(question == "score_Q1"))
+model_q1 <- lmer(score ~ survey +  (1 | random_id),
+                 data = summative_assessment |> filter(question_number == "Q1"))
+model_q1_out <- coef(summary(model_q1))
 
 model_q2 <- lmer(score ~ survey +  (1 | random_id),
-                 data = df_questions_long |> filter(question == "score_Q2"))
+                 data = summative_assessment |> filter(question_number == "Q2"))
+model_q2_out <- coef(summary(model_q2))
 
 model_q3 <- lmer(score ~ survey +  (1 | random_id),
-                 data = df_questions_long |> filter(question == "score_Q3"))
+                 data = summative_assessment |> filter(question_number == "Q3"))
+model_q3_out <- coef(summary(model_q3))
 
+summative_stats <-
+  as_tibble(rbind(model_q1_out, model_q2_out, model_q3_out)) |>
+  mutate(Question = c(
+    rep("Data Cleaning and Preprocessing", 3),
+    rep("Reproducibility and Workflow Practices", 3),
+    rep("Analytical Reasoning and Data Exploration", 3))
+  ) |>
+  mutate(Timepoint = rep(c("Intercept", "Post-course", "Post-codeathon"), times = 3)) |>
+  relocate(Question, .before = Estimate) |>
+  relocate(Timepoint, .before = Estimate) |>
+  mutate(adj.p = p.adjust(`Pr(>|t|)`))
 ```
 
 EMM Plots 
 
 ```{r}
-library(emmeans)
-library(ggplot2)
-library(patchwork)
-
 # Map of question titles
 question_labels <- c(
   score_Q1 = "Data cleaning & preprocessing",
@@ -917,16 +750,12 @@ plot_emm_simple <- function(model, label) {
 p_q1 <- plot_emm_simple(model_q1, question_labels[["score_Q1"]])
 p_q2 <- plot_emm_simple(model_q2, question_labels[["score_Q2"]])
 p_q3 <- plot_emm_simple(model_q3, question_labels[["score_Q3"]])
-
-# Show and save each plot
-print(p_q1); ggsave("figures/emm_q1.png", p_q1, width = 6, height = 4, dpi = 300)
-print(p_q2); ggsave("figures/emm_q2.png", p_q2, width = 6, height = 4, dpi = 300)
-print(p_q3); ggsave("figures/emm_q3.png", p_q3, width = 6, height = 4, dpi = 300)
 ```
 
 Make combined plots for all question domains
 
 ```{r echo=F}
+library(patchwork)
 # The following code not printed
 
 make_theme <- function(in_plot) {
@@ -947,16 +776,6 @@ make_theme <- function(in_plot) {
 p_q1 <- make_theme(p_q1)
 p_q2 <- make_theme(p_q2)
 p_q3 <- make_theme(p_q3)
-
-# Combine horizontally (side-by-side)
-p_combined_horizontal <- p_q1 + p_q2 + p_q3 + plot_layout(ncol = 3)
-ggsave(
-  filename = "figures/emm_combined_horizontal.png",
-  plot = p_combined_horizontal,
-  width = 12,
-  height = 4,
-  dpi = 300
-)
 
 # Combine vertically (stacked) (Figure 5 in manuscript)
 p_combined_vertical <- p_q1 / p_q2 / p_q3
