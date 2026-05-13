@@ -48,3 +48,8 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# TeX files
+supplemental/*.log
+supplemental/*.aux
+supplemental/*.synctex.gz
