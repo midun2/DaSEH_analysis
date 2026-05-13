@@ -1,0 +1,141 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amsmath,amssymb}
+
+\usepackage{longtable,booktabs,array}
+
+% Margins
+\addtolength{\oddsidemargin}{-.5in}%
+\addtolength{\evensidemargin}{-.1in}%
+\addtolength{\textwidth}{1in}%
+\addtolength{\textheight}{1.7in}%
+\addtolength{\topmargin}{-0.5in}
+
+\makeatletter
+\AtBeginDocument{%
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+
+% Keep captions as page width, not table width
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\makeatother
+
+% redefine the command that creates the equation number - supplement will start with "S"
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+% reset counter 
+\setcounter{figure}{0}
+\setcounter{table}{0}
+
+\title{%
+  Supplementary Information \\
+  \vspace{7mm}
+  \large Best of both worlds: Upskilling professionals in data science through online coursework and in-person codeathons}
+\author{Idun, Humphries, Teichman, Wright, \& Hoffman, 2026}
+\date{}
+
+%----------------------------------------------------------------------------------------
+%	Document Content
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+\maketitle
+\bigskip
+
+
+\begin{longtable}[]{@{}llrrr@{}}
+\caption{Learner survey responses for self-assessed comfort and confidence with data science, on a 1-5 scale. SD = standard deviation.}\label{tbl-one}\tabularnewline
+\toprule\noalign{}
+Measure & Timepoint & Mean & Median & SD \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Comfort & Pre-course & 2.66 & 2.00 & 0.987 \\
+Comfort & Post-course & 3.96 & 4.00 & 0.759 \\
+Comfort & Post-codeathon & 4.23 & 4.00 & 0.765 \\
+Confidence & Pre-course & 2.30 & 2.00 & 1.090 \\
+Confidence & Post-course & 3.89 & 4.00 & 0.641 \\
+Confidence & Post-codeathon & 4.15 & 4.00 & 0.675 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}llrrr@{}}
+\caption{Learner survey responses for self-assessed comfort and confidence with data science, paired two-sample Wilcoxon test statistics.}\label{tbl-two}\tabularnewline
+\toprule\noalign{}
+Measure & Comparison & Statistic & P-value & Adj. P-value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Comfort & Pre-course vs. Post-course & 198 & $<$0.001 & $<$0.001 \\
+Comfort & Post-course vs. Post-codeathon & 24.5 & 0.035 & 0.071 \\
+Confidence & Pre-course vs. Post-course & 253 & $<$0.001 & $<$0.001 \\
+Confidence & Post-course vs. Post-codeathon & 18 & 0.060 & 0.071 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lllll@{}}
+\caption{Learner survey responses for self-assessed skills improvement with data science tools. SD = standard deviation.}\label{tbl-three}\tabularnewline
+\toprule\noalign{}
+Timepoint & Mean & Median & SD \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Post-course & 4.48 & 4.00 & 0.509 \\
+Post-codeathon & 4.54 & 5.00 & 0.508 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrrrrrr@{}}
+\caption{Fixed Effects from Linear Mixed Model: Data Cleaning and Preprocessing. SE = standard error. DF = degrees of freedom.}\label{tbl-six}\tabularnewline
+\toprule\noalign{}
+Timepoint & Estimate & SE & DF & T Statistic & P-value & Adj. P-value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Intercept &	    0.208 &	0.026 &	72 & 8.05 & $<$0.001 & $<$0.001 \\
+Post-course &	    0.133 &	0.034 &	45 & 3.88 &	$<$0.001 & $<$0.001 \\
+Post-codeathon &	0.178 &	0.035 &	51 & 5.13 & $<$0.001 & $<$0.001 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrrrrrr@{}}
+\caption{Fixed Effects from Linear Mixed Model: Reproducibility and Workflow Practices. SE = standard error. DF = degrees of freedom.}\label{tbl-seven}\tabularnewline
+\toprule\noalign{}
+Timepoint & Estimate & SE & DF & T Statistic & P-value & Adj. P-value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Intercept  & 0.223  & 0.027  & 76  & 8.21  & $<$0.001  & $<$0.001 \\
+Post-course  & 0.188  & 0.038  & 49  & 4.96  & $<$0.001  & $<$0.001 \\
+Post-codeathon  & 0.279  & 0.041  & 53  & 6.77  & $<$0.001  & $<$0.001 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrrrrrr@{}}
+\caption{Fixed Effects from Linear Mixed Model: Analytical Reasoning and Data Exploration. SE = standard error. DF = degrees of freedom.}\label{tbl-eight}\tabularnewline
+\toprule\noalign{}
+Timepoint & Estimate & SE & DF & T Statistic & P-value & Adj. P-value \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Intercept	& 0.235	& 0.026	& 73	& 8.98	& $<$0.001	& $<$0.001 \\
+Post-course	& 0.182	& 0.033	& 49	& 5.57	& $<$0.001	& $<$0.001 \\
+Post-codeathon	& 0.246	& 0.034	& 55	& 7.14	& $<$0.001	& $<$0.001 \\
+\end{longtable}
+
+\end{document}  
