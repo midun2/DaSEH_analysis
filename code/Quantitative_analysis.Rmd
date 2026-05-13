@@ -443,7 +443,7 @@ rbind(
   confidence_test_course,
   confidence_test_codeathon
 ) |> 
-  mutate(p.adj = p.adjust(p.value)) |> 
+  mutate(p.adj = p.adjust(p.value, method = "bonferroni")) |> 
   dplyr::select(statistic, p.value, p.adj)
 ```
 
@@ -706,7 +706,7 @@ summative_stats <-
   mutate(Timepoint = rep(c("Intercept", "Post-course", "Post-codeathon"), times = 3)) |>
   relocate(Question, .before = Estimate) |>
   relocate(Timepoint, .before = Estimate) |>
-  mutate(adj.p = p.adjust(`Pr(>|t|)`))
+  mutate(adj.p = p.adjust(`Pr(>|t|)`, method = "bonferroni"))
 ```
 
 EMM Plots 
