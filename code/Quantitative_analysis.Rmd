@@ -437,6 +437,7 @@ rbind(
 )
 
 # Print results with p-adjustment
+# Table S2
 rbind(
   comfort_test_course,
   comfort_test_codeathon,
@@ -696,6 +697,7 @@ model_q3 <- lmer(score ~ survey +  (1 | random_id),
                  data = summative_assessment |> filter(question_number == "Q3"))
 model_q3_out <- coef(summary(model_q3))
 
+# Tables S4-S6
 summative_stats <-
   as_tibble(rbind(model_q1_out, model_q2_out, model_q3_out)) |>
   mutate(Question = c(
