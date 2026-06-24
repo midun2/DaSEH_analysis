@@ -1,0 +1,28 @@
+how_often_before,how_often_now,r_use_cases,codeathon,why_not_using_r,courses_materials,recommended,returned,part_of_journey
+occasionally,occasionally,"data_analysis, data_cleaning",no,NA,yes,yes,none,strong_disagree
+occasionally,few,NA,yes,no_need,no,yes,none,strong_agree
+occasionally,weekly,"data_analysis, visualization, data_cleaning, academic",no,NA,no,yes,cheatsheets,strong_agree
+never,occasionally,"data_analysis, visualization, data_cleaning",yes,NA,no,yes,"slides, cheatsheets, video",strong_agree
+occasionally,extensively,"data_analysis, visualization, data_cleaning, academic",no,NA,yes,yes,cheatsheets,strong_agree
+few,occasionally,"data_analysis, visualization, data_cleaning, reporting",yes,NA,yes,yes,"slides, cheatsheets",strong_agree
+weekly,extensively,"data_analysis, visualization, data_cleaning, academic, geospatial, teaching",yes,NA,yes,yes,"slides, cheatsheets",agree
+extensively,extensively,"data_analysis, visualization, data_cleaning, ml_modeling, geospatial, teaching",yes,NA,yes,yes,cheatsheets,strong_agree
+occasionally,weekly,"data_analysis, visualization, data_cleaning",yes,NA,yes,yes,"slides, cheatsheets",agree
+never,occasionally,"data_analysis, visualization, data_cleaning, academic, reporting, bioinformatics, teaching",yes,NA,yes,yes,"slides, cheatsheets, video",strong_agree
+never,occasionally,"data_analysis, visualization, data_cleaning, academic, bioinformatics, teaching",yes,NA,no,yes,slides,strong_disagree
+never,few,NA,yes,"not_confident, forgot",no,yes,"slides, cheatsheets",agree
+few,occasionally,"data_analysis, visualization, data_cleaning",yes,NA,no,yes,"slides, cheatsheets",strong_agree
+weekly,occasionally,"data_analysis, visualization, data_cleaning, ml_modeling, academic, reporting, geospatial, teaching",no,NA,yes,yes,none,agree
+never,occasionally,"data_analysis, visualization, data_cleaning, academic, geospatial, teaching",yes,NA,yes,yes,"slides, cheatsheets",strong_agree
+never,occasionally,"data_analysis, visualization, data_cleaning, academic",yes,NA,yes,yes,"slides, cheatsheets",agree
+occasionally,extensively,"data_analysis, visualization, data_cleaning, academic, reporting, geospatial, teaching",yes,NA,yes,yes,"slides, cheatsheets",strong_agree
+few,occasionally,"data_analysis, visualization, data_cleaning",yes,NA,yes,yes,"slides, cheatsheets, video",strong_disagree
+occasionally,occasionally,"visualization, data_cleaning",yes,NA,no,yes,"slides, cheatsheets",agree
+occasionally,occasionally,"visualization, data_cleaning, academic, bioinformatics",yes,NA,yes,yes,slides,strong_agree
+weekly,extensively,"data_analysis, visualization, data_cleaning, ml_modeling, academic",yes,NA,yes,yes,"slides, cheatsheets",strong_agree
+occasionally,few,NA,yes,workplace_culture,no,yes,none,strong_disagree
+extensively,extensively,"data_analysis, visualization, data_cleaning, ml_modeling, academic, reporting, teaching",yes,NA,yes,yes,slides,strong_agree
+weekly,extensively,"data_analysis, visualization, data_cleaning, ml_modeling, academic, reporting",no,NA,yes,yes,"slides, cheatsheets",agree
+few,extensively,"data_analysis, visualization, data_cleaning, reporting, geospatial",yes,NA,yes,yes,"slides, cheatsheets, video",strong_agree
+extensively,extensively,"data_analysis, visualization, data_cleaning, reporting",yes,NA,yes,yes,slides,agree
+weekly,extensively,"data_analysis, visualization, data_cleaning, ml_modeling, academic, reporting",no,NA,yes,yes,"slides, cheatsheets",agree
