@@ -50,7 +50,7 @@ get_clean_survey <- function(sheet_name, label) {
 
 # Load all surveys
 precourse <- get_clean_survey("1 - Pre-course", "1_pre-course")
-postcourse <- get_clean_survey("2 - Post-course", "2_post-course") |> filter(!(random_id == "9C8F1953" & Session == 2))
+postcourse <- get_clean_survey("2 - Post-course", "2_post-course")
 postcodeathon <- get_clean_survey("3 - Post-codeathon", "3_post-codeathon")
 
 # Load summative scores
@@ -63,9 +63,9 @@ summative_assessment <-
 
 ```{r}
 # Pull out Likert items only
-precourse_num <- precourse |> select(random_id, 5:19)
-postcourse_num <- postcourse |> select(random_id, 3:18)
-postcodeathon_num <- postcodeathon |> select(random_id, 3:19)
+precourse_num <- precourse |> filter(Session %in% c(1,2)) |> select(random_id, 5:19)
+postcourse_num <- postcourse |> filter(Session %in% c(1,2)) |> select(random_id, 3:18)
+postcodeathon_num <- postcodeathon |> filter(Session %in% c(1,2)) |> select(random_id, 3:19)
 
 # Join by ID
 daseh_dat <- precourse_num |>
