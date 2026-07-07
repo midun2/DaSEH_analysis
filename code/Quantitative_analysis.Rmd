@@ -841,3 +841,7 @@ ggsave(
 )
 ```
 
+```{r}
+sessionInfo()
+```
+
