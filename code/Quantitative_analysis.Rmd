@@ -477,6 +477,7 @@ skills_long <- skills_data |>
     )
   )
 
+# Table S3
 # Summary stats at each timepoint
 skills_stats <- skills_long |>
   group_by(timepoint) |>
@@ -518,7 +519,7 @@ make_likert_plot <- function(item, dat, make_hist = F) {
         axis.ticks = element_blank(),
         strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
         panel.background = element_rect(
-          size = 1,
+          linewidth = 1,
           color = 'grey70',
           fill = NA
         ),
@@ -539,7 +540,7 @@ make_likert_plot <- function(item, dat, make_hist = F) {
         axis.ticks.y = element_blank(),
         strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
         panel.background = element_rect(
-          size = 1,
+          linewidth = 1,
           color = 'grey70',
           fill = NA
         ),
@@ -631,7 +632,7 @@ make_likert_plot <- function(tool, dat) {
       axis.ticks = element_blank(),
       strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
       panel.background = element_rect(
-        size = 1,
+        linewidth = 1,
         color = 'grey70',
         fill = NA
       ),
@@ -742,7 +743,7 @@ plot_emm_simple <- function(model, label) {
     )
 
   ggplot(emm_df, aes(x = survey, y = emmean, group = 1)) +
-    geom_line(size = 1.2) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 3) +
     geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.1) +
     labs(
@@ -770,7 +771,7 @@ make_theme <- function(in_plot) {
       axis.ticks = element_blank(),
       strip.background = element_rect(fill = '#F0F0F0', color = '#F0F0F0'),
       panel.background = element_rect(
-        size = 1,
+        linewidth = 1,
         color = 'grey70',
         fill = NA
       ),
@@ -825,7 +826,7 @@ p_combined_vertical <-
   ggplot(emm_df_all, aes(
     x = survey, y = emmean, group = 1
   )) +
-    geom_line(size = 1.2) +
+    geom_line(linewidth = 1.2) +
     geom_point(size = 3) +
     geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.1) +
     labs(x = NULL, y = "Predicted Score") +
