@@ -557,7 +557,7 @@ hist_plots <- lapply(likert_items,
                      make_hist = T)
 
 #Figure 3 in manuscript
-pdf("figures/likert_comfort_confidence.pdf", width = 7, height = 4)
+pdf("figures/likert_comfort_confidence.pdf", width = 7.5, height = 4)
 cowplot::plot_grid(
   likert_plots[[1]] + theme(
         plot.margin = unit(c(0, 0, 0, 0), "mm")),
