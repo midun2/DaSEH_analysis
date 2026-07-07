@@ -34,7 +34,7 @@ How does the blended model impact objective learning outcomes measured via a sum
 
 ```{r}
 # Authenticate once
-gs4_auth(email = TRUE)
+gs4_auth(email = Sys.getenv("daseh_gmail")) # Replace with a valid email if needed!
 
 # Google Sheet links
 survey_sheet_link <- "https://docs.google.com/spreadsheets/d/1xVDoVb8uTvApd1sYdQBQp6HkCzUPmDunWc82Pk2Rrv0/edit?usp=sharing"
@@ -298,7 +298,8 @@ comfort_test_course <- broom::tidy(
     daseh_dat_clean$comfort2,
     daseh_dat_clean$comfort1,
     paired = TRUE,
-    alternative = "greater"
+    alternative = "greater",
+    exact = FALSE
   )
 )
 comfort_test_codeathon <- broom::tidy(
@@ -306,7 +307,8 @@ comfort_test_codeathon <- broom::tidy(
     daseh_dat_clean$comfort3,
     daseh_dat_clean$comfort2,
     paired = TRUE,
-    alternative = "greater"
+    alternative = "greater",
+    exact = FALSE
   )
 )
 ```
@@ -415,7 +417,8 @@ confidence_test_course <- broom::tidy(
     daseh_dat_clean$confidence2,
     daseh_dat_clean$confidence1,
     paired = TRUE,
-    alternative = "greater"
+    alternative = "greater",
+    exact = FALSE
   )
 )
 confidence_test_codeathon <- broom::tidy(
@@ -423,7 +426,8 @@ confidence_test_codeathon <- broom::tidy(
     daseh_dat_clean$confidence3,
     daseh_dat_clean$confidence2,
     paired = TRUE,
-    alternative = "greater"
+    alternative = "greater",
+    exact = FALSE
   )
 )
 ```
